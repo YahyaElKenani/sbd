@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Candle } from "./Candle";
 import { Confetti } from "./Confetti";
 import { toast } from "sonner";
@@ -6,65 +6,15 @@ import { toast } from "sonner";
 export const BirthdayCake = () => {
   const [candles, setCandles] = useState([true, true, true, true]);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
-  const startListening = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new AudioContext();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
-      
-      analyser.fftSize = 256;
-      microphone.connect(analyser);
-      
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-      microphoneRef.current = microphone;
-      
-      setIsListening(true);
-      detectBlow();
-      toast.success("Microphone ready! Blow to extinguish the candles 🎂");
-    } catch (error) {
-      toast.error("Please allow microphone access to blow out the candles");
+  const blowCandle = (index: number) => {
+    if (candles[index]) {
+      setCandles(prev => {
+        const newCandles = [...prev];
+        newCandles[index] = false;
+        return newCandles;
+      });
     }
-  };
-
-  const detectBlow = () => {
-    if (!analyserRef.current) return;
-
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const checkBlowing = () => {
-      if (!analyserRef.current) return;
-      
-      analyserRef.current.getByteFrequencyData(dataArray);
-      const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-
-      // If sound level is high enough (blowing detected)
-      if (average > 30) {
-        const litCandles = candles.filter(c => c).length;
-        if (litCandles > 0) {
-          const randomIndex = candles.findIndex(c => c);
-          if (randomIndex !== -1) {
-            setCandles(prev => {
-              const newCandles = [...prev];
-              newCandles[randomIndex] = false;
-              return newCandles;
-            });
-          }
-        }
-      }
-
-      animationFrameRef.current = requestAnimationFrame(checkBlowing);
-    };
-
-    checkBlowing();
   };
 
   useEffect(() => {
@@ -72,16 +22,6 @@ export const BirthdayCake = () => {
     if (allOut && candles.length > 0) {
       setShowConfetti(true);
       toast.success("Happy Birthday Sara! 🎉🎂");
-      
-      // Stop microphone
-      if (microphoneRef.current && audioContextRef.current) {
-        microphoneRef.current.disconnect();
-        audioContextRef.current.close();
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-      }
-      
       setTimeout(() => setShowConfetti(false), 5000);
     }
   }, [candles]);
@@ -89,24 +29,7 @@ export const BirthdayCake = () => {
   const resetCandles = () => {
     setCandles([true, true, true, true]);
     setShowConfetti(false);
-    if (!isListening) {
-      startListening();
-    }
   };
-
-  useEffect(() => {
-    startListening();
-
-    return () => {
-      if (microphoneRef.current && audioContextRef.current) {
-        microphoneRef.current.disconnect();
-        audioContextRef.current.close();
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div className="relative">
@@ -116,7 +39,9 @@ export const BirthdayCake = () => {
         {/* Candles */}
         <div className="flex justify-center gap-8 mb-6">
           {candles.map((isLit, index) => (
-            <Candle key={index} isLit={isLit} />
+            <div key={index} onClick={() => blowCandle(index)} className="cursor-pointer">
+              <Candle isLit={isLit} />
+            </div>
           ))}
         </div>
 

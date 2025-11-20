@@ -11,9 +11,7 @@ const Index = () => {
           Sara! 🎉
         </h2>
         <p className="text-lg md:text-xl text-muted-foreground max-w-md mx-auto">
-          Make a wish and blow out the candles! 
-          <br />
-          <span className="text-sm">🎤 Allow microphone access to blow</span>
+          Make a wish and click the candles to blow them out! 🕯️
         </p>
       </div>
 
